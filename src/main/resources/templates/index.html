@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Book List</title>
@@ -22,6 +22,9 @@
 
     <h1>Book List</h1>
 
+    <!-- ロール情報を埋め込む（JavaScriptで使う） -->
+    <span id="user-role" th:text="${#authentication.authorities[0].authority}" style="display: none;"></span>
+
     <table>
         <thead>
             <tr>
@@ -31,7 +34,7 @@
                 <th>出版社</th>
                 <th>出版日</th>
                 <th>在庫数</th>
-                <th>操作</th>
+                 <th sec:authorize="hasRole('ADMIN')">操作</th>
             </tr>
         </thead>
         <tbody id="book-table-body">
@@ -40,70 +43,88 @@
     </table>
 
     <h2>書籍新規登録</h2>
-    <form id="book-form">
-        <label for="title">タイトル:</label>
-        <input type="text" id="title" name="title" required><br>
-        <label for="author">著者:</label>
-        <input type="text" id="author" name="author" required><br>
-        <label for="publisher">出版社:</label>
-        <input type="text" id="publisher" name="publisher" required><br>
-        <label for="publishedDate">出版日:</label>
-        <input type="date" id="publishedDate" name="publishedDate" required><br>
-        <label for="stock">在庫数:</label>
-        <input type="number" id="stock" name="stock" required><br>
-        <button type="submit">新規登録</button>
-    </form>
+    <!-- 新規登録フォームをADMINのみ表示 -->
+    <sec:authorize access="hasRole('ADMIN')">
+        <form id="book-form">
+            <label for="title">タイトル:</label>
+            <input type="text" id="title" name="title" required><br>
+            <label for="author">著者:</label>
+            <input type="text" id="author" name="author" required><br>
+            <label for="publisher">出版社:</label>
+            <input type="text" id="publisher" name="publisher" required><br>
+            <label for="publishedDate">出版日:</label>
+            <input type="date" id="publishedDate" name="publishedDate" required><br>
+            <label for="stock">在庫数:</label>
+            <input type="number" id="stock" name="stock" required><br>
+            <button type="submit">新規登録</button>
+        </form>
+    </sec:authorize>
 
     <script>
+        const userRole = document.getElementById("user-role").innerText.trim(); // ロール取得
+
         // 書籍一覧取得
         fetch('/api/books')
             .then(response => response.json())
             .then(books => {
                 let tbody = document.getElementById('book-table-body');
                 books.forEach(book => {
-                    let row = `<tr>
-                        <td>${book.id}</td>
-                        <td>${book.title}</td>
-                        <td>${book.author}</td>
-                        <td>${book.publisher}</td>
-                        <td>${book.publishedDate}</td>
-                        <td>${book.stock}</td>
-                        <td>
-                            <button onclick="updateBook(${book.id})">更新</button>
-                            <button onclick="deleteBook(${book.id})">削除</button>
-                        </td>
-                    </tr>`;
+                    let actionButtons = '';
+                    if (userRole === "ROLE_ADMIN") {
+                        actionButtons = `
+                            <td>
+                                <button onclick="updateBook(${book.id})">更新</button>
+                                <button onclick="deleteBook(${book.id})">削除</button>
+                            </td>`;
+                    } else {
+                        actionButtons = `<td></td>`;
+                    }
+
+                    const row = `
+                        <tr>
+                            <td>${book.id}</td>
+                            <td>${book.title}</td>
+                            <td>${book.author}</td>
+                            <td>${book.publisher}</td>
+                            <td>${book.publishedDate}</td>
+                            <td>${book.stock}</td>
+                            ${actionButtons}
+                        </tr>`;
+
                     tbody.innerHTML += row;
                 });
             })
             .catch(error => console.error('Error fetching books:', error));
 
-        // 書籍新規登録
-        document.getElementById('book-form').addEventListener('submit', function(event) {
-            event.preventDefault();
+        // 新規登録処理（ADMINのみフォームがあるため、ここはそのままでOK）
+        const bookForm = document.getElementById('book-form');
+        if (bookForm) {
+            bookForm.addEventListener('submit', function(event) {
+                event.preventDefault();
 
-            const bookData = {
-                title: document.getElementById('title').value,
-                author: document.getElementById('author').value,
-                publisher: document.getElementById('publisher').value,
-                publishedDate: document.getElementById('publishedDate').value,
-                stock: document.getElementById('stock').value
-            };
+                const bookData = {
+                    title: document.getElementById('title').value,
+                    author: document.getElementById('author').value,
+                    publisher: document.getElementById('publisher').value,
+                    publishedDate: document.getElementById('publishedDate').value,
+                    stock: document.getElementById('stock').value
+                };
 
-            fetch('/api/books', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(bookData)
-            })
-            .then(response => response.json())
-            .then(newBook => {
-                alert('書籍が登録されました');
-                location.reload(); // 登録後にページをリロードして新しいリストを反映
-            })
-            .catch(error => console.error('Error creating book:', error));
-        });
+                fetch('/api/books', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookData)
+                })
+                .then(response => response.json())
+                .then(newBook => {
+                    alert('書籍が登録されました');
+                    location.reload();
+                })
+                .catch(error => console.error('Error creating book:', error));
+            });
+        }
 
         // 書籍更新
         function updateBook(bookId) {
@@ -125,7 +146,7 @@
             .then(response => response.json())
             .then(updatedBook => {
                 alert('書籍が更新されました');
-                location.reload(); // 更新後にページをリロードして新しいリストを反映
+                location.reload();
             })
             .catch(error => console.error('Error updating book:', error));
         }
@@ -138,7 +159,7 @@
                 })
                 .then(() => {
                     alert('書籍が削除されました');
-                    location.reload(); // 削除後にページをリロードして新しいリストを反映
+                    location.reload();
                 })
                 .catch(error => console.error('Error deleting book:', error));
             }
