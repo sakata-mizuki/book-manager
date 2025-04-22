@@ -53,6 +53,12 @@
 		</dependency> -->
 
 		<dependency>
+		
+		<dependency>
+  <groupId>org.thymeleaf.extras</groupId>
+  <artifactId>thymeleaf-extras-springsecurity5</artifactId>
+        </dependency>
+
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
@@ -92,6 +98,7 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency> -->
+		
  </dependencies>
 
 	<build>

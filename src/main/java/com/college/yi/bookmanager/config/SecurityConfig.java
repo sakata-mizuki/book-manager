@@ -25,7 +25,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-//        .csrf(csrf -> csrf.e)
         .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/books").hasAnyRole("USER", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/books").hasRole("ADMIN")
@@ -43,7 +42,7 @@ public class SecurityConfig {
         )
 
         .logout(logout -> logout
-            .logoutSuccessUrl("/")
+            .logoutSuccessUrl("/login")
             .permitAll()
         );
 
@@ -53,9 +52,9 @@ public class SecurityConfig {
    
     @Bean
     public PasswordEncoder passwordEncoder() {
-        System.out.println(new BCryptPasswordEncoder().encode(""));
         return new BCryptPasswordEncoder();
-        }
+   }
+    
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
         AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);

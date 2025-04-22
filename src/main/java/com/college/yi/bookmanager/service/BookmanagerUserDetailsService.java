@@ -1,6 +1,9 @@
 package com.college.yi.bookmanager.service;
 
 
+import java.util.List;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,11 +27,14 @@ public class BookmanagerUserDetailsService implements UserDetailsService{
             throw new UsernameNotFoundException("User not found: " + username);
         }
         
+        String role = "ROLE_" + user.getRole().toUpperCase().trim();
+        
     return User.builder()
             .username(user.getUsername())
             .password(user.getPassword())
-            .roles(user.getRole())
-            .disabled(!user.isEnabled()) .build();
+            .authorities(List.of(new SimpleGrantedAuthority(role)))
+            .disabled(!user.isEnabled())
+            .build();
 }
 }
 

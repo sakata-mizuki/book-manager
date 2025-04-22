@@ -2,6 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+	<meta name="_csrf" th:content="${_csrf.token}" />
+	<meta name="_csrf_header" th:content="${_csrf.headerName}" />
     <title>Book List</title>
     <style>
         table {
@@ -22,9 +24,6 @@
 
     <h1>Book List</h1>
 
-    <!-- ロール情報を埋め込む（JavaScriptで使う） -->
-    <span id="user-role" th:text="${#authentication.authorities[0].authority}" style="display: none;"></span>
-
     <table>
         <thead>
             <tr>
@@ -42,9 +41,8 @@
         </tbody>
     </table>
 
+	<th:block sec:authorize="hasRole('ADMIN')">
     <h2>書籍新規登録</h2>
-    <!-- 新規登録フォームをADMINのみ表示 -->
-    <sec:authorize access="hasRole('ADMIN')">
         <form id="book-form">
             <label for="title">タイトル:</label>
             <input type="text" id="title" name="title" required><br>
@@ -58,10 +56,9 @@
             <input type="number" id="stock" name="stock" required><br>
             <button type="submit">新規登録</button>
         </form>
-    </sec:authorize>
-
-    <script>
-        const userRole = document.getElementById("user-role").innerText.trim(); // ロール取得
+		</th:block>
+    <script th:inline="javascript">
+        const userRole = /*[[${#authentication.authorities[0].authority}]]*/ null;
 
         // 書籍一覧取得
         fetch('/api/books')
@@ -97,6 +94,9 @@
             .catch(error => console.error('Error fetching books:', error));
 
         // 新規登録処理（ADMINのみフォームがあるため、ここはそのままでOK）
+		// メタタグからCSRF情報を取得
+		const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+		const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
         const bookForm = document.getElementById('book-form');
         if (bookForm) {
             bookForm.addEventListener('submit', function(event) {
@@ -113,7 +113,8 @@
                 fetch('/api/books', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+						 [csrfHeader]: csrfToken
                     },
                     body: JSON.stringify(bookData)
                 })
@@ -139,23 +140,30 @@
             fetch(`/api/books/${bookId}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json'
-                },
+					'Content-Type': 'application/json',
+					  [csrfHeader]: csrfToken 
+					        },
                 body: JSON.stringify(updatedBookData)
             })
-            .then(response => response.json())
-            .then(updatedBook => {
-                alert('書籍が更新されました');
-                location.reload();
-            })
-            .catch(error => console.error('Error updating book:', error));
-        }
+			  .then(response => {
+			        if (!response.ok) throw new Error('更新に失敗しました');
+			        return response.json();
+			    })
+			    .then(updatedBook => {
+			        alert('書籍が更新されました');
+			        location.reload();
+			    })
+			    .catch(error => console.error('Error updating book:', error));
+			}
 
         // 書籍削除
         function deleteBook(bookId) {
             if (confirm("本当に削除しますか？")) {
                 fetch(`/api/books/${bookId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+					headers: {
+						[csrfHeader]: csrfToken 
+				 	}
                 })
                 .then(() => {
                     alert('書籍が削除されました');
