@@ -1,0 +1,10 @@
+package com.college.yi.bookmanager.repository;
+
+import java.util.List;
+
+import com.college.yi.bookmanager.entity.BookEntity;
+
+public interface BookMapper {
+	List<BookEntity> findAll();
+
+}

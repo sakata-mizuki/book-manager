@@ -1,0 +1,16 @@
+package com.college.yi.bookmanager.service;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.college.yi.bookmanager.model.Book;
+
+@Service
+public class BookService {
+
+    public List<Book> getAllBooks() {
+        // TODO: 書籍データを作成してリストに追加する処理を書く
+        return null; // 仮でnullを返しておく
+    }
+}

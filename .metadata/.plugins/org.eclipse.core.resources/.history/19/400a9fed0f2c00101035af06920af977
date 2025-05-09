@@ -1,0 +1,6 @@
+package com.college.yi.bookmanager.repository;
+
+public interface BookMapper {
+	List<BookEntity> findAll();
+
+}

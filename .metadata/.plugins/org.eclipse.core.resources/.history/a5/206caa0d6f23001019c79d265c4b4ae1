@@ -1,0 +1,12 @@
+package com.college.yi.bookmanager.model;
+
+@Data
+public class Book {
+	private int id;
+	private String title;
+	private String author;
+	private String publisher;
+	private LocalDate publishDate;
+	private int stock;
+
+}

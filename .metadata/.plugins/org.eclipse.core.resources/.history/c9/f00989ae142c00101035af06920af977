@@ -1,0 +1,57 @@
+package com.college.yi.bookmanager.service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.college.yi.bookmanager.entity.BookEntity;
+import com.college.yi.bookmanager.model.Book;
+import com.college.yi.bookmanager.repository.BookMapper;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class BookService {
+
+    private final BookMapper bookMapper;
+
+    // 書籍一覧取得
+    public List<Book> getAllBooks() {
+        List<BookEntity> entities = bookMapper.findAll();
+
+        if (entities.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "書籍が存在しません。");
+        }
+
+        return entities.stream()
+                .map(e -> new Book(
+                        e.getId(),
+                        e.getTitle(),
+                        e.getAuthor(),
+                        e.getPublisher(),
+                        e.getPublishDate(),
+                        e.getStock()))
+                .collect(Collectors.toList());
+    }
+
+    // 書籍登録（POST）
+    public Book registerBook(Book book) {
+        BookEntity entity = new BookEntity();
+        entity.setTitle(book.getTitle());
+        entity.setAuthor(book.getAuthor());
+        entity.setPublisher(book.getPublisher());
+        entity.setPublishDate(book.getpublishDate());
+        entity.setStock(book.getStock());
+
+        // DBにINSERT実行（IDが生成されて戻ってくる）
+        bookMapper.insert(entity);
+
+        // 返すモデルBookにIDをセットして返却
+        book.setId(entity.getId());
+        return book;
+    }
+}
