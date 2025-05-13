@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Book List</title>
@@ -20,6 +20,10 @@
             margin-top: 30px;
         }
     </style>
+
+    <!-- CSRF対応用のmetaタグ -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body>
 
@@ -34,16 +38,17 @@
             <th>出版社</th>
             <th>出版日</th>
             <th>在庫数</th>
-            <th>操作</th>
+            <th sec:authorize="hasRole('ADMIN')">操作</th>
         </tr>
     </thead>
     <tbody id="book-table-body">
-        <!-- JSで書籍を挿入 -->
+        <!-- JavaScriptで書籍を挿入 -->
     </tbody>
 </table>
 
-<h2>書籍の新規登録</h2>
-<form id="book-form">
+<!-- ADMIN のみ新規登録フォームを表示 -->
+<h2 sec:authorize="hasRole('ADMIN')">書籍の新規登録</h2>
+<form id="book-form" sec:authorize="hasRole('ADMIN')">
     <input type="text" id="title" placeholder="タイトル" required>
     <input type="text" id="author" placeholder="著者" required>
     <input type="text" id="publisher" placeholder="出版社">
@@ -53,6 +58,11 @@
 </form>
 
 <script>
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    const isAdmin = /*[[${#authorization.expression('hasRole("ADMIN")')}]]*/ false;
+
     const loadBooks = () => {
         fetch('/api/books')
             .then(response => response.json())
@@ -69,8 +79,10 @@
                         <td>${book.publishedDate ? book.publishedDate.slice(0, 10) : ''}</td>
                         <td>${book.stock}</td>
                         <td>
+                            ${isAdmin ? `
                             <button onclick="deleteBook(${book.id})">削除</button>
                             <button onclick="editBook(${book.id}, '${book.title}', '${book.author}', '${book.publisher || ''}', '${book.publishedDate || ''}', ${book.stock})">編集</button>
+                            ` : ''}
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -81,7 +93,10 @@
 
     const deleteBook = (id) => {
         fetch(`/api/books/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                [csrfHeader]: csrfToken
+            }
         }).then(() => loadBooks());
     };
 
@@ -94,7 +109,7 @@
         document.getElementById('book-form').dataset.editingId = id;
     };
 
-    document.getElementById('book-form').addEventListener('submit', function(event) {
+    document.getElementById('book-form')?.addEventListener('submit', function(event) {
         event.preventDefault();
 
         const id = this.dataset.editingId;
@@ -112,7 +127,8 @@
         fetch(url, {
             method: method,
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
             },
             body: JSON.stringify(book)
         }).then(response => {
@@ -124,7 +140,6 @@
         });
     });
 
-    // 初期表示
     loadBooks();
 </script>
 
