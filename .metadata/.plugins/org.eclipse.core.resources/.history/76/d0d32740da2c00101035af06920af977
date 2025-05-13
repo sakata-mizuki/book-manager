@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Book List</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        form {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Book List</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>タイトル</th>
+            <th>著者</th>
+            <th>出版社</th>
+            <th>出版日</th>
+            <th>在庫数</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody id="book-table-body">
+        <!-- JSで書籍を挿入 -->
+    </tbody>
+</table>
+
+<h2>書籍の新規登録</h2>
+<form id="book-form">
+    <input type="text" id="title" placeholder="タイトル" required>
+    <input type="text" id="author" placeholder="著者" required>
+    <input type="text" id="publisher" placeholder="出版社">
+    <input type="date" id="publishedDate">
+    <input type="number" id="stock" placeholder="在庫数" required>
+    <button type="submit">登録</button>
+</form>
+
+<script>
+    const loadBooks = () => {
+        fetch('/api/books')
+            .then(response => response.json())
+            .then(books => {
+                const tbody = document.getElementById('book-table-body');
+                tbody.innerHTML = '';
+                books.forEach(book => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${book.id}</td>
+                        <td>${book.title}</td>
+                        <td>${book.author}</td>
+                        <td>${book.publisher || ''}</td>
+                        <td>${book.publishedDate || ''}</td>
+                        <td>${book.stock}</td>
+                        <td>
+                            <button onclick="deleteBook(${book.id})">削除</button>
+                            <button onclick="editBook(${book.id}, '${book.title}', '${book.author}', '${book.publisher || ''}', '${book.publishedDate || ''}', ${book.stock})">編集</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+    };
+
+    const deleteBook = (id) => {
+        fetch(`/api/books/${id}`, {
+            method: 'DELETE'
+        }).then(() => loadBooks());
+    };
+
+    const editBook = (id, title, author, publisher, publishedDate, stock) => {
+        document.getElementById('title').value = title;
+        document.getElementById('author').value = author;
+        document.getElementById('publisher').value = publisher;
+        document.getElementById('publishedDate').value = publishedDate;
+        document.getElementById('stock').value = stock;
+        document.getElementById('book-form').dataset.editingId = id;
+    };
+
+    document.getElementById('book-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const id = this.dataset.editingId;
+        const book = {
+            title: document.getElementById('title').value,
+            author: document.getElementById('author').value,
+            publisher: document.getElementById('publisher').value,
+            publishedDate: document.getElementById('publishedDate').value,
+            stock: parseInt(document.getElementById('stock').value)
+        };
+
+        const url = id ? `/api/books/${id}` : '/api/books';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(book)
+        }).then(response => {
+            if (response.ok) {
+                this.reset();
+                delete this.dataset.editingId;
+                loadBooks();
+            }
+        });
+    });
+
+    // 初期表示
+    loadBooks();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+package com.college.yi.bookmanager.repository;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import com.college.yi.bookmanager.entity.BookEntity;
+
+@Mapper
+public interface BookMapper {
+	List<BookEntity> findAll();
+	void insert(BookEntity book);
+	void insert(BookEntity book)
+
+
+}
